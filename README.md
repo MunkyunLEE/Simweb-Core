@@ -16,6 +16,7 @@ LLM-web 시뮬레이터들(FEM-LLM-web, SPH-LLM-web, 이후 LBM 등)이 함께 �
 | `web/js/viewer.js` | three.js 뷰어 (조명, 축 기즈모, 화면 맞춤, 형상 그리기, 박스·화살표·점, PNG) | FEM `app.js` |
 | `web/js/panel.js` | 오른쪽 패널: LLM 설정·상태·응답 테스트, 채팅, 예시 칩 | FEM `index.html`, `app.js` |
 | `web/js/chart.js` | SVG 그래프 | FEM `app.js` |
+| `web/js/fields.js` | 격자 결과 표시: 색 지도(turbo·발산형), 자동 범위, 단면 색·벡터·유선, 단면 수직 와도, Q-criterion 과 등치면(사면체 행진), 이진 프레임 해독 | lbm-flow-lab `results3d.js`, `flowviz.js`, `analysis3d.js` |
 
 ## 앱에서 쓰는 법
 
@@ -41,7 +42,7 @@ app = core.create_app(Plugin())
 ## 방향
 
 - 지금은 SPH-LLM-web 이 처음으로 사용합니다. FEM-LLM-web 은 건드리지 않았고, 안정된 뒤 따로 옮깁니다 (FEM 저장소의 `NOTE_SimWeb-Core.txt`)
-- 결과 표시 항목(속도·압력·와도·벡터·단면·유선·Q-criterion·프로브·하중)은 lbm-flow-lab 것을 FEM 스타일로 옮겨 이곳에 둘 예정입니다 (SPH 2단계)
+- 결과 표시 항목(속도·압력·와도·벡터·단면·유선·Q-criterion)은 lbm-flow-lab 것을 옮겨 `web/js/fields.js` 에 두었습니다 (SPH 2단계). 격자 형식은 `{n:[nx,ny,nz], origin, h, u(3N), p(N), occ(N)}`, x 가 가장 빨리 변하는 순서
 - 최종 목표: 앱끼리 같은 지오메트리(`Geometry.to_dict`)를 공유하고 바꿔 불러오는 통합 화면
 
 ## 설치·시험
