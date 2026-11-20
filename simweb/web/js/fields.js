@@ -3,7 +3,7 @@ export const FIELDS = {
   ux: { label: 'uₓ', unit: 'mm/s', kind: 'div' },
   uy: { label: 'u_y', unit: 'mm/s', kind: 'div' },
   uz: { label: 'u_z', unit: 'mm/s', kind: 'div' },
-  p: { label: '압력 p', unit: 'MPa', kind: 'div' },
+  p: { label: '압력 p', unit: 'MPa', kind: 'seq' },
   vort: { label: '단면 수직 와도 ωₙ', unit: '1/s', kind: 'div' },
   q: { label: 'Q-criterion', unit: '1/s²', kind: 'div' },
 };
@@ -53,9 +53,9 @@ function percentile(values, q) {
 export function autoRange(field, values) {
   const k = kindOf(field);
   if (field === 'p') {
-    const lo = percentile(values, 0.5);
-    const hi = percentile(values, 99.5);
-    return lo < 0 && hi > 0 ? [-Math.max(-lo, hi), Math.max(-lo, hi)] : [Math.min(lo, 0), Math.max(hi, 1e-12)];
+    const hi = percentile(values, 99);
+    const lo = hi > 0 ? 0 : percentile(values, 1);
+    return [lo, Math.max(hi, lo + 1e-12)];
   }
   if (k === 'seq') return [0, Math.max(percentile(values, 99.7), 1e-9)];
   const abs = new Float32Array(values.length);
@@ -65,7 +65,7 @@ export function autoRange(field, values) {
 }
 
 export function colorize(values, field, lo, hi, out) {
-  const L = lut(field === 'p' && lo >= 0 ? 'seq' : kindOf(field));
+  const L = lut(kindOf(field));
   const s = (L.length - 1) / (hi - lo || 1);
   const o = out || new Float32Array(values.length * 3);
   for (let i = 0; i < values.length; i++) {
@@ -78,7 +78,7 @@ export function colorize(values, field, lo, hi, out) {
 }
 
 export function legendGradient(field, lo, hi) {
-  const L = lut(field === 'p' && lo >= 0 ? 'seq' : kindOf(field));
+  const L = lut(kindOf(field));
   const stops = [];
   for (let i = 0; i <= 10; i++) {
     const c = L[Math.round((i / 10) * (L.length - 1))];
@@ -148,7 +148,7 @@ export function planeField(G, P, s, field, Q) {
 }
 
 export function planeRGBA(pf, field, lo, hi, solidRGBA = [0, 0, 0, 0]) {
-  const L = lut(field === 'p' && lo >= 0 ? 'seq' : kindOf(field));
+  const L = lut(kindOf(field));
   const s = (L.length - 1) / (hi - lo || 1);
   const out = new Uint8Array(4 * pf.val.length);
   for (let k = 0; k < pf.val.length; k++) {
