@@ -92,7 +92,7 @@ mountRight(aside, { transport: 'client', adapter })   → adapter.rules → (필
     "sph": { "spec": {}, "results": [] }
   },
   "links": [
-    { "from": "lbm", "kind": "surface_pressure", "to": "fem", "groups": ["roof", "wall_n"], "stat": "mean", "factor": 1.0 }
+    { "from": "lbm", "kind": "surface_pressure", "to": "fem", "groups": ["roof", "wall_n"], "cases": ["mean", "peak"], "g": 3.5, "factor": 1.0 }
   ]
 }
 ```
@@ -127,7 +127,7 @@ LBM/SPH 해석 → 객체 표면 하중 추출 → project.links → FEM 하중 
 | 단계 | 담당 | 내용 |
 |---|---|---|
 | 표면 하중 추출 | LBM | 운동량 교환 링크를 객체 삼각형에 귀속 → 삼각형별 평균 압력 · 전단(시간 평균 구간 지정), 단위 MPa |
-| 내보내기 형식 | 코어 | `surface_loads.json`: `{faces:[i…], p:[MPa…], t:[[MPa,MPa,MPa]…], area:[mm²…], stat:"mean"|"max"|"rms", window:[t0,t1]}` |
+| 내보내기 형식 | 코어 | `surface_loads.json`: `{faces:[i…], p:[MPa…], t:[[MPa,MPa,MPa]…], area:[mm²…], p_mean, p_rms, p_peak (MPa), g:3.5, window:[t0,t1]}` — 평균·RMS를 함께 저장하고 피크는 g로 계산 |
 | 하중 매핑 | 코어 | 형상이 같으면 면 번호 그대로, 다르면 최근접 면 투영 + 합력·합모멘트 보존 보정 |
 | 하중 적용 | FEM | 그룹별 분포압 / 절점력으로 변환, 합력 표시 |
 
@@ -182,7 +182,7 @@ LBM은 두 형태를 모두 유지합니다. 같은 `web/` 파일을 플랫폼�
 | 플랫폼 위치 | **Simweb-Core 안** `simweb.platform` 모듈 | 별도 저장소 만들지 않음 |
 | LLM 키 | **사용자 입력** (엔드포인트·모델·키 모두 빈칸 기본, 누구나 자기 API로 교체) | 서버 환경변수는 선택 사항으로만 유지, 포털 LLM 설정 칸이 기본 |
 | 규칙 파서 | **하나로 병합** (Python / JS 병행 안 함) | 아래 10.1 |
-| 유체 하중 통계 | 미정 — 아래 10.2 설명 후 결정 | |
+| 유체 하중 통계 | **평균 + 피크(평균 + 3.5·RMS) 두 케이스 모두 전달** | 10.2, 6.1 |
 
 ### 10.1 규칙 파서 병합 방향 (안)
 
@@ -202,7 +202,7 @@ LBM은 두 형태를 모두 유지합니다. 같은 `web/` 파일을 플랫폼�
 | RMS | 평균 주위 흔들림 크기 | 피로, 진동 검토 |
 | 피크 = 평균 + g·RMS (g ≈ 3~3.5) | 풍하중 기준에서 쓰는 설계 피크 | 강도 검토 (권장) |
 
-제안: 기본은 **평균**과 **피크(평균 + 3.5·RMS)** 두 하중 케이스를 함께 넘기고, FEM에서 케이스 이름에 표기.
+결정: **평균**과 **피크(평균 + 3.5·RMS)** 두 하중 케이스를 항상 함께 넘기고, FEM 하중 케이스 이름에 `_mean`, `_peak`로 표기. 피크 계수 g는 프로젝트 설정에서 바꿀 수 있게 함 (기본 3.5).
 
 ## 11. 위험과 대응
 
