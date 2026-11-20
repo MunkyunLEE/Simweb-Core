@@ -69,6 +69,23 @@ class Geometry:
                 out.setdefault((min(a, b), max(a, b)), []).append(k)
         return out
 
+    def feature_edges(self, angle=20.0):
+        if not self.faces:
+            return []
+        v = self.vertices
+        n = []
+        for f in self.faces:
+            p = v[f]
+            c = np.cross(p[1] - p[0], p[2] - p[0]) if len(f) == 3 else np.cross(p[2] - p[0], p[3] - p[1])
+            n.append(c / (np.linalg.norm(c) or 1.0))
+        n = np.array(n)
+        cos = np.cos(np.radians(angle))
+        out = []
+        for e, fs in self.edges().items():
+            if len(fs) != 2 or self.face_group[fs[0]] != self.face_group[fs[1]] or abs(float(n[fs[0]] @ n[fs[1]])) < cos:
+                out.append(list(e))
+        return out
+
     def closed(self):
         e = self.edges()
         if not e:
@@ -128,6 +145,7 @@ class Geometry:
             "nodes": self.vertices.round(6).tolist(),
             "tris": tris.tolist(),
             "tri_group": [gi[g] for g in grp],
+            "edges": self.feature_edges(),
             "lines": [list(e) for e in self.lines],
             "line_group": [gi[g] for g in self.line_group],
             "hinges": {k: [list(e) for e in v] for k, v in self.hinges.items()},

@@ -173,16 +173,18 @@ export function createViewer(canvas, gizmo) {
       });
       flat.setAttribute('color', new THREE.BufferAttribute(col, 3));
       flat.computeVertexNormals();
-      gm.add(new THREE.Mesh(flat, surfaceMat({ vertexColors: true, transparent: !!opt.opacity, opacity: opt.opacity || 1 })));
-      const seen = new Set();
-      const ed = [];
-      for (const f of view.tris) for (let i = 0; i < 3; i++) {
-        const a = f[i];
-        const b = f[(i + 1) % 3];
-        const k = a < b ? a * 1e7 + b : b * 1e7 + a;
-        if (!seen.has(k)) {
-          seen.add(k);
-          ed.push(a, b);
+      gm.add(new THREE.Mesh(flat, surfaceMat({ vertexColors: true, transparent: opt.opacity < 1, opacity: opt.opacity ?? 1, depthWrite: !(opt.opacity < 1) })));
+      let ed = (view.edges || []).flat();
+      if (!ed.length) {
+        const seen = new Set();
+        for (const f of view.tris) for (let i = 0; i < 3; i++) {
+          const a = f[i];
+          const b = f[(i + 1) % 3];
+          const k = a < b ? a * 1e7 + b : b * 1e7 + a;
+          if (!seen.has(k)) {
+            seen.add(k);
+            ed.push(a, b);
+          }
         }
       }
       const eg = new THREE.BufferGeometry();
