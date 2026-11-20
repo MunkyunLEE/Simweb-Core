@@ -217,11 +217,49 @@ export function createViewer(canvas, gizmo) {
     return l;
   };
 
-  V.points = (flat, colors, size = 3) => {
+  let ballTex = null;
+  const ball = () => {
+    if (ballTex) return ballTex;
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const x = c.getContext('2d');
+    const gr = x.createRadialGradient(24, 22, 2, 32, 32, 31);
+    gr.addColorStop(0, 'rgba(255,255,255,1)');
+    gr.addColorStop(0.55, 'rgba(215,215,215,1)');
+    gr.addColorStop(0.95, 'rgba(120,120,120,1)');
+    gr.addColorStop(1, 'rgba(120,120,120,0)');
+    x.fillStyle = gr;
+    x.beginPath();
+    x.arc(32, 32, 31, 0, Math.PI * 2);
+    x.fill();
+    ballTex = new THREE.CanvasTexture(c);
+    return ballTex;
+  };
+
+  V.points = (flat, colors, size = 3, opt = {}) => {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(flat instanceof Float32Array ? flat : new Float32Array(flat), 3));
     if (colors) g.setAttribute('color', new THREE.BufferAttribute(colors instanceof Float32Array ? colors : new Float32Array(colors), 3));
-    return new THREE.Points(g, new THREE.PointsMaterial({ size, sizeAttenuation: false, vertexColors: !!colors, color: colors ? 0xffffff : 0x4cc2ff }));
+    const m = { size: opt.world ? size / Math.tan((camera.fov * Math.PI) / 360) : size, sizeAttenuation: !!opt.world, vertexColors: !!colors, color: colors ? 0xffffff : opt.color ?? 0x4cc2ff };
+    if (opt.world) Object.assign(m, { map: ball(), alphaTest: 0.5, transparent: false });
+    return new THREE.Points(g, new THREE.PointsMaterial(m));
+  };
+
+  V.planar = (on, lo, hi) => {
+    controls.enableRotate = !on;
+    if (on && lo && hi) {
+      const c = new THREE.Vector3((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2);
+      const span = Math.max(hi[0] - lo[0], hi[2] - lo[2], 1e-6);
+      V.center = c;
+      V.diag = span;
+      controls.target.copy(c);
+      camera.up.set(0, 0, 1);
+      const d = (0.62 * span) / Math.tan((camera.fov * Math.PI) / 360) * Math.max(1, 1 / Math.max(camera.aspect, 0.3));
+      camera.position.set(c.x, c.y - d, c.z);
+      camera.near = d / 500;
+      camera.far = d * 100;
+      camera.updateProjectionMatrix();
+    }
   };
 
   V.arrow = (from, dir, len, color) => {
